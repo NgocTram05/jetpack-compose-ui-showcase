@@ -13,10 +13,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -33,6 +38,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage // <-- IMPORT MỚI cho Coil
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,13 +50,17 @@ class MainActivity : ComponentActivity() {
                     composable("welcome") { WelcomeScreen(navController) }
                     composable("list") { ComponentsListScreen(navController) }
                     composable("textDetail") { TextDetailScreen(navController) }
+
+                    // --- [MỚI] THÊM 2 ROUTE MỚI ---
+                    composable("imageDetail") { ImageDetailScreen(navController) }
+                    composable("textFieldDetail") { TextFieldDetailScreen(navController) }
                 }
             }
         }
     }
 }
 
-// --- MÀN HÌNH 1: WELCOME SCREEN ---
+// --- MÀN HÌNH 1: WELCOME SCREEN (Không đổi) ---
 @Composable
 fun WelcomeScreen(navController: NavHostController) {
     val imageLogo = painterResource(id = R.drawable.logo_app)
@@ -106,7 +116,7 @@ fun WelcomeScreen(navController: NavHostController) {
     }
 }
 
-// --- MÀN HÌNH 2: COMPONENTS LIST SCREEN ---
+// --- MÀN HÌNH 2: COMPONENTS LIST SCREEN (Cập nhật onClick) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComponentsListScreen(navController: NavHostController) {
@@ -130,11 +140,17 @@ fun ComponentsListScreen(navController: NavHostController) {
             item {
                 ComponentItem("Text", "Displays text", onClick = { navController.navigate("textDetail") })
             }
-            item { ComponentItem("Image", "Displays an image") }
+            // --- [CẬP NHẬT] Thêm onClick cho Image ---
+            item {
+                ComponentItem("Image", "Displays an image", onClick = { navController.navigate("imageDetail") })
+            }
 
             // Nhóm Input
             item { CategoryHeader("Input") }
-            item { ComponentItem("TextField", "Input field for text") }
+            // --- [CẬP NHẬT] Thêm onClick cho TextField ---
+            item {
+                ComponentItem("TextField", "Input field for text", onClick = { navController.navigate("textFieldDetail") })
+            }
             item { ComponentItem("PasswordField", "Input field for passwords") }
 
             // Nhóm Layout
@@ -149,6 +165,8 @@ fun ComponentsListScreen(navController: NavHostController) {
         }
     }
 }
+
+// --- CÁC COMPOSABLE HỖ TRỢ (Không đổi) ---
 @Composable
 fun CategoryHeader(title: String) {
     Text(
@@ -186,6 +204,8 @@ fun SpecialComponentItem(title: String, description: String) {
         Text(text = description, fontSize = 14.sp, color = Color.DarkGray)
     }
 }
+
+// --- MÀN HÌNH 3: TEXT DETAIL SCREEN (Không đổi) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextDetailScreen(navController: NavHostController) {
@@ -254,6 +274,133 @@ fun FormattedText() {
     )
 }
 
+// ---MÀN HÌNH 4: IMAGE DETAIL SCREEN ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ImageDetailScreen(navController: NavHostController) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Images", color = MaterialTheme.colorScheme.primary) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            AsyncImage(
+                model = "https://logo.svgcdn.com/devicon/jetpackcompose-original.png",
+                contentDescription = "Image from URL",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop // Crop ảnh cho vừa
+            )
+            Text(
+                text = "https://logo.svgcdn.com/devicon/jetpackcompose-original.png",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Image(
+                painter = painterResource(id = R.drawable.logo_app),
+                contentDescription = "In app image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Text(
+                text = "In app",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+    }
+}
+
+// ---MÀN HÌNH 5: TEXTFIELD DETAIL SCREEN ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TextFieldDetailScreen(navController: NavHostController) {
+    var textValue by rememberSaveable { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("TextField", color = MaterialTheme.colorScheme.primary) }, // Tiêu đề như trong hình
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // TextField
+            OutlinedTextField(
+                value = textValue,
+                onValueChange = { textValue = it },
+                placeholder = { Text("Thông tin nhập") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Dòng text màu đỏ như trong hình
+            Text(
+                text = "Tự động cập nhật dữ liệu theo textfield",
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Dữ liệu đang nhập: $textValue",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+// --- PREVIEWS ---
 @Preview(showBackground = true, name = "Welcome Screen", widthDp = 360, heightDp = 780)
 @Composable
 fun WelcomeScreenPreview() {
@@ -270,4 +417,20 @@ fun UIComponentsListScreenPreview() {
 @Composable
 fun TextDetailScreenPreview() {
     TextDetailScreen(navController = rememberNavController())
+}
+
+@Preview(showBackground = true, name = "Image Detail Screen", widthDp = 360, heightDp = 780)
+@Composable
+fun ImageDetailScreenPreview() {
+    MaterialTheme {
+        ImageDetailScreen(navController = rememberNavController())
+    }
+}
+
+@Preview(showBackground = true, name = "TextField Detail Screen", widthDp = 360, heightDp = 780)
+@Composable
+fun TextFieldDetailScreenPreview() {
+    MaterialTheme {
+        TextFieldDetailScreen(navController = rememberNavController())
+    }
 }
